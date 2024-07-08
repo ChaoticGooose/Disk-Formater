@@ -2,8 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-void help();
+#include "lib/include/fat.h"
 
 // format <filesystem> <disk_identifier> [-q]
 int main(int argc, char *argv[]) {
@@ -36,4 +35,9 @@ int main(int argc, char *argv[]) {
 
     char *filesystem = argv[optind];
     char *disk_identifier = argv[optind + 1];
+
+    printf("FS: %s\n", filesystem);
+    printf("Disk: %s\n", disk_identifier);
+
+    fat_format(disk_identifier, quick);
 }
