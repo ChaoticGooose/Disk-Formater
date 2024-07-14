@@ -43,6 +43,12 @@ static int get_dev_blocks(int* fd)
 static int zero_disk(int* fd)
 {
     char* zeros = calloc(1, 512); // 512 byte sector size, Should really be checking how large the sectors are
+    if (zeros == NULL)
+    {
+        perror("Memory Allocation Error");
+        return -1;
+    }
+
     ssize_t written, total = 0;
     do {
         total += written = write(*fd, zeros, 512); // Write 0s to each sector
