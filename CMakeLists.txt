@@ -7,6 +7,6 @@ project(DiskFormatter, VERSION 0.0.0.1
 add_library(fat STATIC lib/fat.c lib/include/fat.h)
 target_include_directories(fat PUBLIC lib/include)
 
-add_executable(format main.c)
+add_executable(format src/main.c)
 target_link_libraries(format PUBLIC fat)
 
