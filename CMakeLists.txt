@@ -4,9 +4,14 @@ project(DiskFormatter, VERSION 0.0.0.1
         DESCRIPTION "Seriously Shit Disk Formatter (dont use)"
         LANGUAGES C)
 
-add_library(fat STATIC lib/fat.c lib/include/fat.h)
-target_include_directories(fat PUBLIC lib/include)
+add_subdirectory(./lib)
 
-add_executable(format src/main.c)
+add_executable(format ./src/main.c)
+
 target_link_libraries(format PUBLIC fat)
+
+target_include_directories(format PUBLIC
+                           "${PROJECT_BINARY_DIR}"
+                           "${PROJECT_SOURCE_DIR}/lib/include"
+                       )
 
