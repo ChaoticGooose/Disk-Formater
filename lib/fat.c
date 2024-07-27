@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <fcntl.h>
-#include <linux/fs.h>
-#include <sys/ioctl.h>
+
+#include "blkDevices.h"
 
 #define FAT12_16_BOOTCODE_SIZE  448
 #define FAT32_BOOTCODE_SIZE     420
@@ -27,7 +27,6 @@
 const uint8_t FAT32_JMP_INSTRUCTION[3] = {0xEB, 0x58, 0x90};
 const uint8_t FAT12_16_JMP_INSTRUCTION[3] = {0xEB, 0x3C, 0x90};
 
-static ssize_t get_dev_blocks(int* fd);
 static ssize_t zero_disk(int* fd);
 static ssize_t boot_sector(int* fd, uint8_t FATVersion, uint8_t clusterSize, uint32_t procSectors, uint32_t totalSectors, char volumeLabel[11]);
 
@@ -115,20 +114,6 @@ int fat_format(char* target, int fatVersion, uint8_t clusterSectors, int procSec
     boot_sector(&fd, fatVersion, clusterSectors, procSectors, blocks, volumeLabel);
 
     return 0;
-}
-
-/* Get number of sectors on fd
- * https://man7.org/linux/man-pages/man4/sd.4.html/
-*/
-static ssize_t get_dev_blocks(int* fd)
-{
-    unsigned long long blocks = 0;
-    if (ioctl(*fd, BLKGETSIZE, &blocks) == -1)
-    {
-        perror("ioctl");
-        return -1;
-    }
-    return blocks;
 }
 
 static ssize_t zero_disk(int* fd)
