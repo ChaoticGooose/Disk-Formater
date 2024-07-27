@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <linux/hdreg.h>
 
 #include "blkDevices.h"
 
@@ -28,7 +29,8 @@ const uint8_t FAT32_JMP_INSTRUCTION[3] = {0xEB, 0x58, 0x90};
 const uint8_t FAT12_16_JMP_INSTRUCTION[3] = {0xEB, 0x3C, 0x90};
 
 static ssize_t zero_disk(int* fd);
-static ssize_t boot_sector(int* fd, uint8_t FATVersion, uint8_t clusterSize, uint32_t procSectors, uint32_t totalSectors, char volumeLabel[11]);
+static ssize_t boot_sector(
+        int* fd, uint8_t FATVersion, uint8_t clusterSectors, char volumeLabel[11]);
 
 uint8_t bootCode12_16[FAT12_16_BOOTCODE_SIZE] = {
     0xBE, 0x00, 0x00, 0xB4, 0x0E, 0x8A, 0x84, 0x19, 0x7C, 0xCD, 0x10, 0x83, 0xC6, 0x01, 0x80, 
@@ -88,8 +90,9 @@ struct msdos_boot_sector {
     uint16_t sign; /* Boot Signiture, 0xAA55 */
 }__attribute__((packed));
 
-int fat_format(char* target, int fatVersion, uint8_t clusterSectors, int procSectors, char volumeLabel[11], bool quick)
+int fat_format(char* target, int fatVersion, uint8_t clusterSectors, char volumeLabel[11], bool quick)
 {
+
     int fd = open(target, O_WRONLY);
     if (fd == -1)
     {
@@ -97,21 +100,14 @@ int fat_format(char* target, int fatVersion, uint8_t clusterSectors, int procSec
         return 1;
     }
 
-    int blocks = get_dev_blocks(&fd);
-    if (blocks == -1)
-    {
-        perror("ioctl");
-        return 1;
-    }
-    printf("blocks: %d\n", blocks);
-    
+
     if(!quick)
     {
         zero_disk(&fd);
     }
 
     printf("clusterSize: %d\n", clusterSectors);
-    boot_sector(&fd, fatVersion, clusterSectors, procSectors, blocks, volumeLabel);
+    boot_sector(&fd, fatVersion, clusterSectors, volumeLabel);
 
     return 0;
 }
@@ -131,14 +127,16 @@ static ssize_t zero_disk(int* fd)
     } while (written == 512);
 
     free(zeros);
-    printf("(zero) Bytes Written: %ld\n", total);
     return 0;
 }
 
 static ssize_t boot_sector(
-        int* fd, uint8_t FATVersion, uint8_t clusterSectors, uint32_t procSectors, 
-        uint32_t totalSectors, char volumeLabel[11])
+        int* fd, uint8_t FATVersion, uint8_t clusterSectors, char volumeLabel[11])
 {
+
+    // Get disk info
+    unsigned long long blocks = get_dev_blocks(fd);
+    struct hd_geometry geo = get_bios_params(fd);
 
     /* Set boot sector values */
 
@@ -148,13 +146,13 @@ static ssize_t boot_sector(
     bootSector->cluster_sectors = clusterSectors;
     bootSector->FAT = 2;
     bootSector->media = MEDIA_TYPE;
-    bootSector->hidden_sectors = procSectors;
+    bootSector->hidden_sectors = geo.start;
 
     if (FATVersion == 32)
     {
         printf("FAT32\n");
         bootSector->reserved_sectors = 32;
-        bootSector->total_sectors = totalSectors;
+        bootSector->total_sectors = blocks;
 
         bootSector->fat32.FAT32_size = SECTORS_PER_FAT; // FIXME: This is a placeholder
         // bootSector->fat32.flags = 0
@@ -181,7 +179,15 @@ static ssize_t boot_sector(
     else
     {
         bootSector->reserved_sectors = 1;
-        bootSector->total_sectors_16 = totalSectors;
+        // Verify that the number of sectors is less than 0x10000
+        /*
+        if (geo.sectors > 0x10000)
+        {
+            fprintf(stderr, "Number of sectors exceeds 0x10000\n");
+            return -1;
+        }
+        */
+        bootSector->total_sectors_16 = blocks;
 
         bootSector->oldfat.vol_info.drive_number = 0x80;
         bootSector->oldfat.vol_info.reserved = 0;
@@ -208,8 +214,6 @@ static ssize_t boot_sector(
         perror("write");
         return -1;
     }
-
-    printf("(boot sector) Done\n");
 
     free(bootSector);
     return 0;

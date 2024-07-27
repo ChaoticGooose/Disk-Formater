@@ -8,7 +8,7 @@
 /* Get number of sectors on fd
  * https://man7.org/linux/man-pages/man4/sd.4.html/
 */
-ssize_t get_dev_blocks(int* fd)
+unsigned long long get_dev_blocks(int* fd)
 {
     unsigned long long blocks = 0;
     if (ioctl(*fd, BLKGETSIZE, &blocks) == -1)
@@ -28,4 +28,3 @@ struct hd_geometry get_bios_params(int* fd)
     }
     return geo;
 }
-

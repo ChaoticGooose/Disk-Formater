@@ -3,7 +3,8 @@
 
 #include <sys/types.h>
 
-ssize_t get_dev_blocks(int* fd);
+unsigned long long get_dev_blocks(int* fd);
+struct hd_geometry get_bios_params(int* fd);
 
 #endif
 
