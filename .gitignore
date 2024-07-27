@@ -1,2 +1,5 @@
 # Build Directory
 build/*
+
+# ignore all cache files and directories
+.cache/
