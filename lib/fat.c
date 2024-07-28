@@ -198,11 +198,17 @@ static ssize_t boot_sector(
     if (FATVersion == 32)
     {
         printf("FAT32\n");
+        // Zero out reserved and unused fields
+        memset(bootSector->fat32.reserved, 0, 12);
+        bootSector->root_entries = 0;
+        bootSector->total_sectors_16 = 0;
+        bootSector->FAT_size = 0;
         bootSector->reserved_sectors = 32;
-        bootSector->total_sectors = blocks;
+        bootSector->fat32.vol_info.reserved = 0;
 
+        bootSector->total_sectors = blocks;
         bootSector->fat32.FAT32_size = SECTORS_PER_FAT; // FIXME: This is a placeholder
-        // bootSector->fat32.flags = 0
+        bootSector->fat32.flags = 0;
         bootSector->fat32.FS_ver[0] = 0;
         bootSector->fat32.FS_ver[1] = 0;
         bootSector->fat32.root_cluster = ROOT_CLUSTER;
