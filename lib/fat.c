@@ -80,10 +80,10 @@ struct msdos_boot_sector {
     uint8_t FAT; /* Number of FATs, should be 2 */
     uint16_t root_entries; /* 32-byte directory entries in root directory, FAT12/16 ONLY */
     uint16_t total_sectors_16; /* Number of sectors (16-bit <0x10000) */ 
-    uint8_t media; /* unused */
+    uint8_t media; /* unused on modern systems */
     uint16_t FAT_size; /* Sectors used by FAT, FAT12/16 ONLY */
-    uint16_t track_sectors; /* unused */
-    uint16_t heads; /* unused */
+    uint16_t track_sectors; /* unused on modern systems */
+    uint16_t heads; /* unused on modern systems */
     uint32_t hidden_sectors; /* Sectors preceding the FAT volume */
     uint32_t total_sectors; /* Total number of sectors (32-bit) */
     union {
@@ -192,6 +192,8 @@ static ssize_t boot_sector(
     bootSector->FAT = 2;
     bootSector->media = MEDIA_TYPE;
     bootSector->hidden_sectors = geo.start;
+    bootSector->track_sectors = geo.sectors;
+    bootSector->heads = geo.heads;
 
     if (FATVersion == 32)
     {
