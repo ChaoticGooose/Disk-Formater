@@ -14,7 +14,6 @@
 #define FAT32_BOOTCODE_SIZE     420
 #define OEM_NAME "MSWIN4.1"
 #define SECTOR_SIZE             512
-#define SECTORS_PER_FAT         1 // FIXME: This is a placeholder
 #define ROOT_CLUSTER            2
 #define FS_INFO_OFFSET_32       1
 #define BOOT_SIGNATURE          0xAA55
@@ -176,10 +175,10 @@ static ssize_t writeFsInfo(int* fd, uint16_t fsInfoSector)
     return 0;
 }
 
+
 static ssize_t boot_sector(
         int* fd, uint8_t FATVersion, uint8_t clusterSectors, char volumeLabel[11])
 {
-
     // Get disk info
     unsigned long long blocks = get_dev_blocks(fd);
     struct hd_geometry geo = get_bios_params(fd);
@@ -204,10 +203,19 @@ static ssize_t boot_sector(
         bootSector->total_sectors_16 = 0;
         bootSector->FAT_size = 0;
         bootSector->reserved_sectors = 32;
-        bootSector->fat32.vol_info.reserved = 0;
-
         bootSector->total_sectors = blocks;
-        bootSector->fat32.FAT32_size = SECTORS_PER_FAT; // FIXME: This is a placeholder
+
+        /* According to https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf
+         * Section 3.4 */
+
+        uint32_t rootDirSectors = (bootSector->root_entries * 32 + SECTOR_SIZE - 1) / SECTOR_SIZE;
+        uint32_t totalSectors = blocks - (geo.start + rootDirSectors);
+        uint32_t tmp = (256 * clusterSectors) + bootSector->FAT; // No clue what this is
+        
+        bootSector->fat32.FAT32_size = (totalSectors + tmp - 1) / tmp;
+
+        bootSector->fat32.vol_info.reserved = 0;
+        bootSector->fat32.FAT32_size = blocks / clusterSectors / 2;
         bootSector->fat32.flags = 0;
         bootSector->fat32.FS_ver[0] = 0;
         bootSector->fat32.FS_ver[1] = 0;
@@ -240,6 +248,25 @@ static ssize_t boot_sector(
             return -1;
         }
         */
+        if (FATVersion == 12)
+        {
+            bootSector->root_entries = 512;
+        }
+        else
+        {
+            bootSector->root_entries = 512;
+        }
+
+        /* According to https://academy.cba.mit.edu/classes/networking_communications/SD/FAT.pdf
+         * Section 3.4 */
+
+        uint16_t rootDirSectors = (bootSector->root_entries * 32 + SECTOR_SIZE - 1) / SECTOR_SIZE;
+        uint16_t totalSectors = blocks - (geo.start + rootDirSectors);
+        uint16_t tmp = (256 * clusterSectors) + bootSector->FAT; // No clue what this is
+        
+        bootSector->FAT_size = (totalSectors + tmp - 1) / tmp;
+
+
         bootSector->total_sectors_16 = blocks;
 
         bootSector->oldfat.vol_info.drive_number = 0x80;
