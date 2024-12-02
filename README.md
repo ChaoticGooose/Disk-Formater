@@ -1,4 +1,7 @@
 # Basic Disk Formatter
+
+> This project is on hold right now, I may return in the future. Theres still lots of wierdness in the bytes written which makes the volume unreadable
+
 **DO NOT USE THIS ON ANY SYSTEM YOU CARE ABOUT. THIS IS A WORK IN PROGRESS TOOL AND MAY DESTROY DATA.**  
 **I AM NOT RESPONSIBLE FOR ANY DATA LOSS OR DAMAGE TO YOUR SYSTEM.**  
 
